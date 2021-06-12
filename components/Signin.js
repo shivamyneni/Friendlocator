@@ -27,7 +27,6 @@ const Signin = ({navigation}) => {
     auth
       .signInWithEmailAndPassword(email, pwd)
       .then(res => {
-        setloading(false);
         navigation.navigate('Main');
       })
       .catch(err => {

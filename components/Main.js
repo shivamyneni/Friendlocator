@@ -9,6 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import {db, auth} from '../firebaseconfig';
+//import Icon from 'react-native-elements';
 
 const Main = () => {
   MapboxGL.setAccessToken(
@@ -22,8 +23,9 @@ const Main = () => {
     );
   };
 
-  const [locations, setlocations] = React.useState([[40, 40]]);
+  const [locations, setlocations] = React.useState([{name: '', x: [40, 40]}]);
   const [log, setlog] = React.useState(false);
+  const [polyloc, setpolyloc] = React.useState([]);
   React.useEffect(() => {
     permission();
     PermissionsAndroid.check(
@@ -32,34 +34,50 @@ const Main = () => {
     ).then(response => {
       if (response) {
         geolocation();
-        Renderpoints();
       }
     });
   }, []);
 
+  // setTimeout(() => {
+  //   geolocation();
+  // }, 5000);
   const geolocation = () => {
     Geolocation.getCurrentPosition(
       location => {
         const lat = location.coords.latitude;
         const lon = location.coords.longitude;
-        var docData = {lon: lon, lat: lat};
+        var mail = auth.currentUser.email;
+        mail = mail.split('@gmail.com');
+        mail = mail.join('');
+        console.log(mail);
+        var docData = {lon: lon, lat: lat, mail: mail};
+        console.log(auth.currentUser.uid);
         db.collection('user').doc(auth.currentUser.uid).set(docData);
+        setTimeout(() => Renderpoints(), 3000);
       },
-      error => console.log(error),
-      {enableHighAccuracy: true, timeout: 2000, maximumAge: 1000},
+      error => geolocation(),
+      {enableHighAccuracy: true, timeout: 5000, maximumAge: 1000},
       {enableHighAccuracy: true},
     );
   };
 
   const Renderpoints = () => {
     let coord = [];
+    let poly = [];
     db.collection('user').onSnapshot(querySnapshot => {
       querySnapshot.docs.map(doc => {
         const x = [];
+        var dat = new Object();
+        dat.name = doc.data().mail;
         x.push(doc.data().lon);
         x.push(doc.data().lat);
-        coord = [...coord, x];
+        dat.x = x;
+        coord = [...coord, dat];
         setlocations(coord);
+        poly = [...poly, x];
+        setpolyloc(poly);
+        console.log(polyloc);
+        setlog(true);
       });
     });
   };
@@ -72,27 +90,52 @@ const Main = () => {
             <MapboxGL.PointAnnotation
               id={index.toString()}
               title="markers"
-              coordinate={user}
+              coordinate={user.x}
             />
+            <MapboxGL.MarkerView id={index.toString()} coordinate={user.x}>
+              <View style={styles.container}>
+                <Text>{user.name}</Text>
+              </View>
+            </MapboxGL.MarkerView>
           </View>
         ))}
+        {log ? (
+          <MapboxGL.ShapeSource
+            id="polygonSource"
+            maxZoomLevel={12}
+            shape={{
+              type: 'Feature',
+              geometry: {
+                type: 'Polygon',
+                coordinates: [polyloc],
+              },
+            }}>
+            <MapboxGL.FillLayer
+              id="polygion"
+              style={{
+                fillOpacity: 0.2,
+                fillColor: 'red',
+                fillOutlineColor: '#ffffff',
+              }}
+            />
+          </MapboxGL.ShapeSource>
+        ) : null}
       </MapboxGL.MapView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  loginButton: {
-    backgroundColor: '#46aab8',
-    paddingVertical: 10,
+  container: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    width: 100,
+    height: 20,
+    justifyContent: 'center',
+    //width: moderateScale(100),
+    backgroundColor: 'white',
     borderRadius: 8,
-    marginTop: 10,
-  },
-  loginButtonText: {
-    color: '#fff',
-    alignSelf: 'center',
-    fontSize: 20,
+    //height: moderateScale(100),
   },
 });
-
 export default Main;
