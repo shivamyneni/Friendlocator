@@ -33,3 +33,7 @@
 
 <br />
 <br />
+
+
+[instagram]: https://instagram.com/_shivamyneni
+[linkedin]: https://linkedin.com/in/shivamyneni
