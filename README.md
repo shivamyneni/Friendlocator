@@ -11,7 +11,7 @@
 - ⭐ If you like my work a 🌟 will be appreciated🤩
 -  🖼  Here is the Preview😋
 -  
- ![Screenshot_2021-06-12-21-39-03-080_com friendlocator](https://user-images.githubusercontent.com/59661196/121782466-2a16cd80-cbc7-11eb-957c-702d63970779.jpg)
+ ![Screenshot_2021-06-10-16-49-49-468_com friendlocator](https://user-images.githubusercontent.com/59661196/121782558-af9a7d80-cbc7-11eb-9082-f74845c7059e.jpg) ![Screenshot_2021-06-12-21-39-03-080_com friendlocator](https://user-images.githubusercontent.com/59661196/121782466-2a16cd80-cbc7-11eb-957c-702d63970779.jpg)
 
 - This app uses popcorn time api to fetch the movies list.Movie Tab shows the rating,genre and description of movie it also has the functionality of copying the download link to the clipboard. 
 
