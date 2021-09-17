@@ -1,15 +1,17 @@
 import React from 'react';
 import MapboxGL from '@react-native-mapbox-gl/maps';
-import Geolocation from 'react-native-geolocation-service';
+
 import {
   View,
   Text,
   PermissionsAndroid,
   TouchableOpacity,
   StyleSheet,
+  Image,
+  FlatList,
+  ScrollView,
 } from 'react-native';
-import {db, auth} from '../firebaseconfig';
-//import Icon from 'react-native-elements';
+import x from './landmarks.json';
 
 const Main = () => {
   MapboxGL.setAccessToken(
@@ -23,104 +25,158 @@ const Main = () => {
     );
   };
 
-  const [locations, setlocations] = React.useState([{name: '', x: [40, 40]}]);
-  const [log, setlog] = React.useState(false);
-  const [polyloc, setpolyloc] = React.useState([]);
-  React.useEffect(() => {
-    permission();
-    PermissionsAndroid.check(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      PermissionsAndroid.PERMISSIONS.INTERNET,
-    ).then(response => {
-      if (response) {
-        geolocation();
-      }
-    });
-  }, []);
-
-  // setTimeout(() => {
-  //   geolocation();
-  // }, 5000);
-  const geolocation = () => {
-    Geolocation.getCurrentPosition(
-      location => {
-        const lat = location.coords.latitude;
-        const lon = location.coords.longitude;
-        var mail = auth.currentUser.email;
-        mail = mail.split('@gmail.com');
-        mail = mail.join('');
-        console.log(mail);
-        var docData = {lon: lon, lat: lat, mail: mail};
-        console.log(auth.currentUser.uid);
-        db.collection('user').doc(auth.currentUser.uid).set(docData);
-        setTimeout(() => Renderpoints(), 3000);
-      },
-      error => geolocation(),
-      {enableHighAccuracy: true, timeout: 5000, maximumAge: 1000},
-      {enableHighAccuracy: true},
-    );
-  };
-
-  const Renderpoints = () => {
-    let coord = [];
-    let poly = [];
-    db.collection('user').onSnapshot(querySnapshot => {
-      querySnapshot.docs.map(doc => {
-        const x = [];
-        var dat = new Object();
-        dat.name = doc.data().mail;
-        x.push(doc.data().lon);
-        x.push(doc.data().lat);
-        dat.x = x;
-        coord = [...coord, dat];
-        setlocations(coord);
-        poly = [...poly, x];
-        setpolyloc(poly);
-        console.log(polyloc);
-        setlog(true);
-      });
-    });
-  };
+  const cameraRef = React.createRef();
+  const [index, setIndex] = React.useState(0);
+  const [modal, setModal] = React.useState(false);
+  const [data, setData] = React.useState(x.data.allLandmarks);
 
   return (
-    <View style={{width: '100%', height: '100%'}}>
+    <View
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+      }}>
       <MapboxGL.MapView style={{width: '100%', height: '100%'}} animated={true}>
-        {locations.map((user, index) => (
-          <View key={index.toString()}>
-            <MapboxGL.PointAnnotation
-              id={index.toString()}
-              title="markers"
-              coordinate={user.x}
-            />
-            <MapboxGL.MarkerView id={index.toString()} coordinate={user.x}>
-              <View style={styles.container}>
-                <Text>{user.name}</Text>
-              </View>
-            </MapboxGL.MarkerView>
-          </View>
-        ))}
-        {log ? (
-          <MapboxGL.ShapeSource
-            id="polygonSource"
-            maxZoomLevel={12}
-            shape={{
-              type: 'Feature',
-              geometry: {
-                type: 'Polygon',
-                coordinates: [polyloc],
-              },
+        <MapboxGL.Camera ref={cameraRef} />
+        {data.map((item, index) => {
+          return (
+            <View key={index.toString()}>
+              {/* <MapboxGL.PointAnnotation
+                id={index.toString() + 'mark'}
+                coordinate={[item.location.longitude, item.location.latitude]}
+              /> */}
+              <MapboxGL.MarkerView
+                id={index.toString() + 'sndsdsd'}
+                coordinate={[item.location.longitude, item.location.latitude]}>
+                <TouchableOpacity
+                  style={styles.container}
+                  onPress={() => {
+                    setIndex(index);
+                    setModal(!modal);
+                    cameraRef.current?.setCamera({
+                      centerCoordinate: [
+                        item.location.longitude,
+                        item.location.latitude,
+                      ],
+                      zoomLevel: 18,
+                      animationDuration: 1000,
+                    });
+                  }}>
+                  <Text
+                    style={{
+                      fontWeight: 'bold',
+                      marginLeft: 10,
+                      marginRight: 10,
+                    }}>
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              </MapboxGL.MarkerView>
+            </View>
+          );
+        })}
+      </MapboxGL.MapView>
+      {modal ? (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 10,
+            left: 0,
+            width: '100%',
+            height: '20%',
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'center',
+          }}>
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              backgroundColor: 'white',
+              borderRadius: 20,
+              height: '100%',
+              width: '90%',
             }}>
-            <MapboxGL.FillLayer
-              id="polygion"
+            <Image
+              source={{uri: x.data.allLandmarks[index].images[1].url}}
               style={{
-                fillOpacity: 0.2,
-                fillColor: 'red',
-                fillOutlineColor: '#ffffff',
+                width: '30%',
+                height: '100%',
+                borderTopLeftRadius: 20,
+                borderBottomLeftRadius: 20,
               }}
             />
-          </MapboxGL.ShapeSource>
-        ) : null}
-      </MapboxGL.MapView>
+            <View
+              style={{display: 'flex', flexDirection: 'column', width: '70%'}}>
+              <Text
+                style={{
+                  marginRight: 10,
+                  marginLeft: 10,
+                  fontWeight: 'bold',
+                  marginTop: 10,
+                  marginBottom: 10,
+                  fontSize: 18,
+                }}>
+                {x.data.allLandmarks[index].name}
+              </Text>
+              <Text
+                style={{
+                  marginRight: 10,
+                  marginLeft: 10,
+                  fontWeight: 'bold',
+                  marginTop: 10,
+                  marginBottom: 10,
+                  fontSize: 14,
+                }}>
+                {x.data.allLandmarks[index].description}
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {data.map((item, index) => {
+        return (
+          <TouchableOpacity
+            key={item.name}
+            style={{
+              backgroundColor: 'white',
+              position: 'absolute',
+              top: index * 80,
+              display: 'flex',
+              left: 10,
+              flexDirection: 'row',
+              width: 'auto',
+              height: 60,
+              borderRadius: 60,
+              aliginItems: 'center',
+            }}
+            onPress={() => {
+              setModal(!modal);
+              setIndex(index);
+              cameraRef.current?.setCamera({
+                centerCoordinate: [
+                  item.location.longitude,
+                  item.location.latitude,
+                ],
+                zoomLevel: 18,
+                animationDuration: 1000,
+              });
+            }}>
+            <Image
+              source={{uri: item.images[1].url}}
+              style={{width: 60, height: '100%', borderRadius: 30}}
+            />
+            <Text
+              style={{marginRight: 10, marginLeft: 10, alignSelf: 'center'}}>
+              {item.name}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };
@@ -129,13 +185,11 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     flexDirection: 'row',
-    width: 100,
-    height: 20,
+    height: 40,
+    width: '30%',
     justifyContent: 'center',
-    //width: moderateScale(100),
     backgroundColor: 'white',
     borderRadius: 8,
-    //height: moderateScale(100),
   },
 });
 export default Main;
